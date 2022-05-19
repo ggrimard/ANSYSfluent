@@ -6,15 +6,20 @@ from Case import Case
 def case(filename):
     return Case(filename)
 
+def getZones(filename):
+    with h5py.File(filename, 'r') as f:
+        zones = np.array(f['/meshes/'])
+    return zones
+
 def readCase(filename,zone=1,returnMore=False):
     """ function that reads a case file and returns the relevant mesh data of the zone"""
 
     with h5py.File(filename, 'r') as f:
-        nodes = np.array(f[f'/meshes/{zone}/nodes/coords/{zone}'])
-        facenodes = np.array(f[f'/meshes/{zone}/faces/nodes/{zone}/nodes'])-1
-        facennodes = np.array(f[f'/meshes/{zone}/faces/nodes/{zone}/nnodes'])
-        c0 = np.array(f[f'/meshes/{zone}/faces/c0/{zone}'])-1
-        c1 = np.array(f[f'/meshes/{zone}/faces/c1/{zone}'])-1
+        nodes = np.array(f[f'/meshes/{zone}/nodes/coords/1'])
+        facenodes = np.array(f[f'/meshes/{zone}/faces/nodes/1/nodes'])-1
+        facennodes = np.array(f[f'/meshes/{zone}/faces/nodes/1/nnodes'])
+        c0 = np.array(f[f'/meshes/{zone}/faces/c0/1'])-1
+        c1 = np.array(f[f'/meshes/{zone}/faces/c1/1'])-1
 
         zoneId = np.array(f[f'/meshes/{zone}/faces/zoneTopology/id'])
         minId = np.array(f[f'/meshes/{zone}/faces/zoneTopology/minId'])
@@ -58,7 +63,7 @@ def readCase(filename,zone=1,returnMore=False):
 
 @njit
 def numbaFirstZero(a):
-    """ function that returns the index of the first zero in an array """
+    """ function that returns the index of the first zero in a flat array """
     return np.where(a==0)[0][0]
 
 @njit
@@ -86,7 +91,7 @@ def getCellCentersPar(cellNodes):
 
 @njit(fastmath=True)
 def numbaMean(array,axis=0):
-    """ function that computes the mean of an array """
+    """ function that computes the mean of an array of points"""
     return array.sum(axis=axis)/array.shape[axis]
 
 @njit(fastmath=True)
@@ -107,7 +112,4 @@ def getFaceCenters(faces,nodes):
 
 
 if __name__ == "__main__":
-    import time
-    t = time.perf_counter()
-    nodes,faces,cells,faceCenters,cellCenters=readCase('case.cas.h5')
-    print('elapsed time: ',time.perf_counter()-t,' seconds')
+    getZones('case.cas.h5')

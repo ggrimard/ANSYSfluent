@@ -22,7 +22,7 @@ def triaColors(faces, minId,maxId,zoneType,boundId,colordict=None):
     minId : minimum id of the zone
     maxId : maximum id of the zone
     zoneType : ANSYS zone type (inlet,outlet,wall,symmetry,...)
-    boundId : arrays with shape = faces.shape and contains true where the boundaries are, this can be obained with np.where(c1==0)
+    boundId : arrays with shape = faces.shape and contains true where the boundaries are, this can be obained with np.where(c1==0).
     colordict: dictionary of colors {int: np.array([r,g,b],dtype=np.floatxx)} with r,g,b in [0,1]
     maxId,minId,zoneType,boundId are all outputs of readCase if you specify the parameter returnMore=True
     output: numpy array of colors (n,3) based on the type of boundary specified in Zonetype

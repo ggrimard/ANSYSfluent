@@ -1,7 +1,10 @@
 import numpy as np
 import h5py
 from numba import njit,prange
+from Case import Case
 
+def case(filename):
+    return Case(filename)
 
 def readCase(filename,zone=1,returnMore=False):
     """ function that reads a case file and returns the relevant mesh data of the zone"""

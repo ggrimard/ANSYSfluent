@@ -5,10 +5,13 @@ import numpy as np
 def quadToTria(faces):
     """
     converts quadrilateral faces to triangular faces
-    faces: numpy array of quadrilateral faces (n,4) containing the indices of the nodes/vertices
+    faces: numpy array of quad faces (n,4) containing the indices of the nodes/vertices
     THIS FUNCTION PRESERVES THE RIGHT HAND RULE
 
     """
+    if faces.shape[1] != 4:
+        raise ValueError('faces must be a numpy array of quad faces (n,4)')
+
     trifaces = np.zeros((faces.shape[0]*2,3),dtype=np.int32)
     for i,[n1,n2,n3,n4] in enumerate(faces):
         trifaces[2*i]  = np.array([n1,n2,n3])
@@ -34,7 +37,6 @@ def triaColors(faces, minId,maxId,zoneType,boundId,colordict=None):
     outletcolor   = np.array([0,1,0],dtype=np.float64)              #blue
     
     if  isinstance(colordict,type(None)):
-        print('default colors!')
         colordict = {2:default,3:wallcolor,4:inletcolor,5:outletcolor,7:symmetrycolor,8:default,9:default,10:inletcolor,11:default,12:default,13:default,14:inletcolor}
     
     c = np.zeros((faces.shape[0],3),dtype=np.float64)

@@ -15,7 +15,8 @@ def readCase(filename,zone=1,returnMore=False):
     """ function that reads a case file and returns the relevant mesh data of the zone"""
 
     with h5py.File(filename, 'r') as f:
-        nodes = np.array(f[f'/meshes/{zone}/nodes/coords/1'])
+        nr = np.array(f[f'/meshes/{zone}/nodes/coords/'])
+        nodes = np.array(f[f'/meshes/{zone}/nodes/coords/{nr[0]}'])
         facenodes = np.array(f[f'/meshes/{zone}/faces/nodes/1/nodes'])-1
         facennodes = np.array(f[f'/meshes/{zone}/faces/nodes/1/nnodes'])
         c0 = np.array(f[f'/meshes/{zone}/faces/c0/1'])-1
@@ -38,20 +39,17 @@ def readCase(filename,zone=1,returnMore=False):
     faces = np.array(faces)
 
     cells = np.zeros((max(np.amax(c1),np.amax(c0))+1,6),dtype=np.int32)
+    c1 = np.append(c1,np.zeros(faces.shape[0]-c1.size,dtype=np.int32))
 
-    for face,cell in enumerate(c0):
+    for face,(cell0,cell1) in enumerate(zip(c0,c1)):
+        
+        ind = numbaFirstZero(cells[cell0])
+        cells[cell0,ind] = face
 
-        try:
-            ind = numbaFirstZero(cells[cell])
-        except IndexError:
-            print(f'the faces of cell{cell}:',cells[cell])
-            print('fucntion output ',numbaFirstZero(cells[cell]))
-        cells[cell,ind] = face
+        if cell1 !=0:
+            ind = numbaFirstZero(cells[cell1])
+            cells[cell1,ind] = face
 
-    for face,cell in enumerate(c1):
-        if cell !=0:
-            ind = numbaFirstZero(cells[cell])
-            cells[cell,ind] = face
 
     cellCenters = getCellCenters(getCellNodes(cells,faces,nodes),nodes.shape[1])
     faceCenters = getFaceCenters(faces,nodes)
@@ -60,6 +58,7 @@ def readCase(filename,zone=1,returnMore=False):
         return nodes,faces,cells,faceCenters,cellCenters,c0,c1,zoneId,zonetype,minId,maxId
 
     return nodes,faces,cells,faceCenters,cellCenters
+
 
 @njit
 def numbaFirstZero(a):

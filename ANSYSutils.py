@@ -27,11 +27,11 @@ def triaColors(faces, minId,maxId,zoneType,boundId,colordict=None):
     maxId,minId,zoneType,boundId are all outputs of readCase if you specify the parameter returnMore=True
     output: numpy array of colors (n,3) based on the type of boundary specified in Zonetype
     """
-    default       = np.array([0.5,0.5,0.5],dtype=np.float64) #gray
-    inletcolor    = np.array([1,0,0],dtype=np.float64)       #red
-    wallcolor     = np.array([0.25,0.25,0.25],dtype=np.float64)       #black
-    symmetrycolor = np.array([0,0,1],dtype=np.float64)       #green
-    outletcolor   = np.array([0,1,0],dtype=np.float64)       #blue
+    default       = np.array([0.5,0.5,0.5],dtype=np.float64)        #gray
+    inletcolor    = np.array([1,0,0],dtype=np.float64)              #red
+    wallcolor     = np.array([0.25,0.25,0.25],dtype=np.float64)     #black
+    symmetrycolor = np.array([0,0,1],dtype=np.float64)              #green
+    outletcolor   = np.array([0,1,0],dtype=np.float64)              #blue
     
     if  isinstance(colordict,type(None)):
         print('default colors!')

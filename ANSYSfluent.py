@@ -45,7 +45,7 @@ def readCase(filename,zone=1,returnMore=False):
             ind = numbaFirstZero(cells[cell])
         except IndexError:
             print(f'the faces of cell{cell}:',cells[cell])
-            print('fucntion output ',np.where(cells[cell]==0))
+            print('fucntion output ',numbaFirstZero(cells[cell]))
         cells[cell,ind] = face
 
     for face,cell in enumerate(c1):
@@ -53,7 +53,7 @@ def readCase(filename,zone=1,returnMore=False):
             ind = numbaFirstZero(cells[cell])
             cells[cell,ind] = face
 
-    cellCenters = getCellCenters(getCellNodes(cells,faces,nodes))
+    cellCenters = getCellCenters(getCellNodes(cells,faces,nodes),nodes.shape[1])
     faceCenters = getFaceCenters(faces,nodes)
 
     if returnMore:
@@ -74,17 +74,17 @@ def getNodesFromFaces(cellfaces,facelist,nodelist):
     return nodes
 
 @njit(fastmath=True)
-def getCellCenters(cellNodes):
+def getCellCenters(cellNodes,dim=3):
     """ function that computes the center of all cells """
-    ccenters = np.zeros((cellNodes.shape[0],3),dtype=np.float64)
+    ccenters = np.zeros((cellNodes.shape[0],dim),dtype=np.float64)
     for i in range(cellNodes.shape[0]):
         ccenters[i] = numbaMean(cellNodes[i])
     return ccenters
 
 @njit(parallel=True,fastmath=True)
-def getCellCentersPar(cellNodes):
+def getCellCentersPar(cellNodes,dim=3):
     """ function that computes the center of all cells """
-    ccenters = np.zeros((cellNodes.shape[0],3),dtype=np.float64)
+    ccenters = np.zeros((cellNodes.shape[0],dim),dtype=np.float64)
     for i in prange(cellNodes.shape[0]):
         ccenters[i] = numbaMean(cellNodes[i])
     return ccenters
@@ -97,7 +97,7 @@ def numbaMean(array,axis=0):
 @njit(fastmath=True)
 def getCellNodes(cells,faces,nodes):
     """ function that returns the nodes indexed by cell number (0-n_cells) """
-    cellNodes = np.zeros((cells.shape[0],cells.shape[1]*faces.shape[1],3),dtype=np.float64)
+    cellNodes = np.zeros((cells.shape[0],cells.shape[1]*faces.shape[1],nodes.shape[1]),dtype=np.float64)
     for cell in range(cells.shape[0]):
         cellNodes[cell] = getNodesFromFaces(cells[cell],faces,nodes)
     return cellNodes
@@ -105,7 +105,7 @@ def getCellNodes(cells,faces,nodes):
 @njit
 def getFaceCenters(faces,nodes):
     """ function that returns the centers of all faces """
-    faceCenters = np.zeros((faces.shape[0],3),dtype=np.float64)
+    faceCenters = np.zeros((faces.shape[0],nodes.shape[1]),dtype=np.float64)
     for face in range(faces.shape[0]):
         faceCenters[face] = numbaMean(nodes[faces[face]])
     return faceCenters

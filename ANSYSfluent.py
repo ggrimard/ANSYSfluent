@@ -11,33 +11,47 @@ def getZones(filename):
         zones = np.array(f['/meshes/'])
     return zones
 
+
 def readCase(filename,zone=1,returnMore=False):
     """ function that reads a case file and returns the relevant mesh data of the zone"""
 
     with h5py.File(filename, 'r') as f:
         nr = np.array(f[f'/meshes/{zone}/nodes/coords/'])
         nodes = np.array(f[f'/meshes/{zone}/nodes/coords/{nr[0]}'])
-        facenodes = np.array(f[f'/meshes/{zone}/faces/nodes/1/nodes'])-1
-        facennodes = np.array(f[f'/meshes/{zone}/faces/nodes/1/nnodes'])
-        c0 = np.array(f[f'/meshes/{zone}/faces/c0/1'])-1
-        c1 = np.array(f[f'/meshes/{zone}/faces/c1/1'])-1
+        facenodes = np.array(f[f'/meshes/{zone}/faces/nodes/1/nodes'],dtype=np.int32)-1
+        facennodes = np.array(f[f'/meshes/{zone}/faces/nodes/1/nnodes'],dtype=np.int32)
+        c0 = np.array(f[f'/meshes/{zone}/faces/c0/1'],dtype=np.int32)-1
+        c1 = np.array(f[f'/meshes/{zone}/faces/c1/1'],dtype=np.int32)-1
 
         zoneId = np.array(f[f'/meshes/{zone}/faces/zoneTopology/id'])
         minId = np.array(f[f'/meshes/{zone}/faces/zoneTopology/minId'])
         maxId = np.array(f[f'/meshes/{zone}/faces/zoneTopology/maxId'])
         zonetype = np.array(f[f'/meshes/{zone}/faces/zoneTopology/zoneType'])
-    
-    # nodes = np.insert(nodes,0,np.array([0,0,0],dtype=np.float64),axis=0)
 
-    ind = 0
-    # faces = [np.array([0,0,0,0])]
-    faces = []
-    for n in facennodes:
-        faces.append(facenodes[ind:ind+n])
-        ind += n
+    facennodes = np.insert(facennodes,0,0)
+    faces = makeFaceList(facennodes,facenodes)
 
-    faces = np.array(faces)
+    cells,c1 = makeCellsList(faces,c0,c1)
 
+    cellCenters = getCellCenters(getCellNodes(cells,faces,nodes),nodes.shape[1])
+    faceCenters = getFaceCenters(faces,nodes)
+
+    if returnMore:
+        return nodes,faces,cells,faceCenters,cellCenters,c0,c1,zoneId,zonetype,minId,maxId
+
+    return nodes,faces,cells,faceCenters,cellCenters
+
+@njit
+def makeFaceList(facennodes,facenodes):
+    indexes = np.cumsum(facennodes)
+    faces=np.zeros((indexes.shape[0]-1,np.amax(facennodes)),dtype=np.int32)
+    for i in range(indexes.shape[0]-1):
+        faces[i]=(facenodes[indexes[i]:indexes[i+1]])
+    return faces
+
+
+@njit(fastmath=True)
+def makeCellsList(faces,c0,c1):
     cells = np.zeros((max(np.amax(c1),np.amax(c0))+1,6),dtype=np.int32)
     c1 = np.append(c1,np.zeros(faces.shape[0]-c1.size,dtype=np.int32))
 
@@ -49,16 +63,7 @@ def readCase(filename,zone=1,returnMore=False):
         if cell1 !=0:
             ind = numbaFirstZero(cells[cell1])
             cells[cell1,ind] = face
-
-
-    cellCenters = getCellCenters(getCellNodes(cells,faces,nodes),nodes.shape[1])
-    faceCenters = getFaceCenters(faces,nodes)
-
-    if returnMore:
-        return nodes,faces,cells,faceCenters,cellCenters,c0,c1,zoneId,zonetype,minId,maxId
-
-    return nodes,faces,cells,faceCenters,cellCenters
-
+    return cells,c1
 
 @njit
 def numbaFirstZero(a):
@@ -111,4 +116,9 @@ def getFaceCenters(faces,nodes):
 
 
 if __name__ == "__main__":
-    getZones('case.cas.h5')
+    zone = 1
+    with h5py.File('case.cas.h5', 'r') as f:
+            facenodes = np.array(f[f'/meshes/{zone}/faces/nodes/1/nodes'])-1
+            facennodes = np.array(f[f'/meshes/{zone}/faces/nodes/1/nnodes'])
+    
+

@@ -21,14 +21,14 @@ def quadToTria(faces):
 def triaColors(faces, minId,maxId,zoneType,boundId,colordict=None):
     """
     assigns colors based on the type of boundary
-    faces : numpy array of triangular faces (n,3)
+    faces : numpy array of quad faces (n,4)
     minId : minimum id of the zone
     maxId : maximum id of the zone
     zoneType : ANSYS zone type (inlet,outlet,wall,symmetry,...)
     boundId : arrays with shape = faces.shape and contains true where the boundaries are, this can be obained with np.where(c1==0).
     colordict: dictionary of colors {int: np.array([r,g,b],dtype=np.floatxx)} with r,g,b in [0,1]
     maxId,minId,zoneType,boundId are all outputs of readCase if you specify the parameter returnMore=True
-    output: numpy array of colors (n,3) based on the type of boundary specified in Zonetype
+    output: numpy array of colors (2*n,3) based on the type of boundary specified in Zonetype
     """
     default       = np.array([0.5,0.5,0.5],dtype=np.float64)        #gray
     inletcolor    = np.array([1,0,0],dtype=np.float64)              #red
@@ -51,3 +51,24 @@ def triaColors(faces, minId,maxId,zoneType,boundId,colordict=None):
         cfinal[2*i+1] = col
     
     return cfinal
+
+@njit
+def faceToNodeColors(triangles,triacolors,nodesshape):
+    """
+    converts triangular face colors to node colors, this is needed to plot colors in ipyvolume
+
+    triangles: numpy array of triangles (n,3)
+    triacolors: numpy array of colors (n,3)
+    nodesshape: tuple of the shape of the nodes array, this is returned by nodes.shape
+    """
+
+    if triangles.shape[1] != 3:
+        raise ValueError('triangles must be a numpy array of triangular faces (n,3)')
+
+    ipvc = np.zeros((nodesshape[0],3))
+    for i,(v1,v2,v3) in enumerate(triangles):
+        c= triacolors[i]
+        ipvc[v1] = c    
+        ipvc[v2] = c
+        ipvc[v3] = c
+    return ipvc

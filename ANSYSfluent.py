@@ -1,3 +1,4 @@
+from matplotlib.pyplot import get
 import numpy as np
 import h5py
 from numba import njit,prange
@@ -6,27 +7,54 @@ from Case import Case
 def case(filename):
     return Case(filename)
 
-def getZones(filename):
+def getMeshes(filename):
     with h5py.File(filename, 'r') as f:
-        zones = np.array(f['/meshes/'])
-    return zones
+        meshes = np.array(f['/meshes/'])
+    return meshes
+
+def getH5arrays(path,f,followstr='',dtype=np.int64,minusone=False):
+    """ 
+    function that returns the datasets at a given path, needed because fluent doesn't use the same number consitently
+    path: string
+    f: h5py file
+    followstr: string
+    dtype: numpy datatype
+    minusone: boolean
+    """
+    if not path.endswith('/'):
+        path += '/'
+
+    try:
+        n=np.array(f[path])
+    except KeyError:
+        raise(KeyError(f'{path} not found in the file'))
+
+    if len(n)==1:
+        return np.array(f[path+n[0]+followstr],dtype=dtype)-1*minusone
+    else:
+        return  [np.array(f[path+n[i]+followstr],dtype=dtype)-1*minusone for i in range(len(n))]
 
 
-def readCase(filename,zone=1,returnMore=False):
+def readCase(filename,mesh=1,returnMore=False):
     """ function that reads a case file and returns the relevant mesh data of the zone"""
 
     with h5py.File(filename, 'r') as f:
-        nr = np.array(f[f'/meshes/{zone}/nodes/coords/'])
-        nodes = np.array(f[f'/meshes/{zone}/nodes/coords/{nr[0]}'])
-        facenodes = np.array(f[f'/meshes/{zone}/faces/nodes/1/nodes'],dtype=np.int32)-1
-        facennodes = np.array(f[f'/meshes/{zone}/faces/nodes/1/nnodes'],dtype=np.int32)
-        c0 = np.array(f[f'/meshes/{zone}/faces/c0/1'],dtype=np.int32)-1
-        c1 = np.array(f[f'/meshes/{zone}/faces/c1/1'],dtype=np.int32)-1
+        nodes = getH5arrays(f'/meshes/{mesh}/nodes/coords/',f,dtype=np.float64)
+        facenodes = getH5arrays(f'/meshes/{mesh}/faces/nodes/',f,'/nodes',minusone=True)
+        facennodes = getH5arrays(f'/meshes/{mesh}/faces/nodes/',f,'/nnodes')
 
-        zoneId = np.array(f[f'/meshes/{zone}/faces/zoneTopology/id'])
-        minId = np.array(f[f'/meshes/{zone}/faces/zoneTopology/minId'])
-        maxId = np.array(f[f'/meshes/{zone}/faces/zoneTopology/maxId'])
-        zonetype = np.array(f[f'/meshes/{zone}/faces/zoneTopology/zoneType'])
+        c0 = getH5arrays(f'/meshes/{mesh}/faces/c0',f,minusone=True)
+        c1 = getH5arrays(f'/meshes/{mesh}/faces/c1',f,minusone=True)
+
+        zoneId = np.array(f[f'/meshes/{mesh}/faces/zoneTopology/id'])
+        minId = np.array(f[f'/meshes/{mesh}/faces/zoneTopology/minId'])
+        maxId = np.array(f[f'/meshes/{mesh}/faces/zoneTopology/maxId'])
+        zonetype = np.array(f[f'/meshes/{mesh}/faces/zoneTopology/zoneType'])
+
+        cortex_var = np.array(f['/settings/Cortex Variables'])
+
+    surfaceList = getSurfaceNames(str(cortex_var[0]))
+
 
     facennodes = np.insert(facennodes,0,0)
     faces = makeFaceList(facennodes,facenodes)
@@ -37,9 +65,26 @@ def readCase(filename,zone=1,returnMore=False):
     faceCenters = getFaceCenters(faces,nodes)
 
     if returnMore:
-        return nodes,faces,cells,faceCenters,cellCenters,c0,c1,zoneId,zonetype,minId,maxId
+        return nodes,faces,cells,faceCenters,cellCenters,c0,c1,zoneId,zonetype,minId,maxId,surfaceList
 
     return nodes,faces,cells,faceCenters,cellCenters
+
+def getSurfaceNames(text):
+    """
+    function that parses the text file and returns a dictionary with id's of the faces and their corresponding names
+    """
+    ls = text.split(' ')
+    names = {}
+    nxt =False
+    for i,t in enumerate(ls):
+        if t.replace('(','') == 'zid':
+            id = int(ls[i+1].replace('(','').replace(')',''))
+            nxt = True
+        if t.replace('(','') == 'name' and nxt:
+            name = ls[i+1].replace('(','').replace(')','')
+            names[id] = name
+            nxt = False
+    return names
 
 @njit
 def makeFaceList(facennodes,facenodes):
@@ -116,9 +161,7 @@ def getFaceCenters(faces,nodes):
 
 
 if __name__ == "__main__":
-    zone = 1
-    with h5py.File('case.cas.h5', 'r') as f:
-            facenodes = np.array(f[f'/meshes/{zone}/faces/nodes/1/nodes'])-1
-            facennodes = np.array(f[f'/meshes/{zone}/faces/nodes/1/nnodes'])
+    cas = case('case.cas.h5')
+    print(cas)
     
 

@@ -20,7 +20,7 @@ class Case:
         else:
             return 'case has multiple meshes'
     
-    def plot_meshplot(self):
+    def plot_meshplot(self,colorDict=None):
         import meshplot as mp
         from ANSYSutils import quadToTria,triaColors
         if len(self.meshes)==1:
@@ -29,18 +29,18 @@ class Case:
 
             triangles = quadToTria(self.faces[boundId])
 
-            colors = triaColors(self.faces,self.minId,self.maxId,self.zonetype,boundId)
+            colors = triaColors(self.faces,self.minId,self.maxId,self.zonetype,boundId,colorDict)
 
             return mp.plot(self.nodes,triangles,colors)
 
-    def plot_ipv(self):
+    def plot_ipv(self,colorDict=None):
         import ipyvolume as ipv
         from ANSYSutils import quadToTria,triaColors,faceToNodeColors
 
         boundId = (self.c1==0)  #this makes sure that we only plot the boundaries
 
         triangles = quadToTria(self.faces[boundId])
-        colors = triaColors(self.faces,self.minId,self.maxId,self.zonetype,boundId)
+        colors = triaColors(self.faces,self.minId,self.maxId,self.zonetype,boundId,colorDict)
 
         nodeColors = faceToNodeColors(triangles,colors,self.nodes.shape)
     

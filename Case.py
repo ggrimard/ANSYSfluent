@@ -44,7 +44,8 @@ class Case:
 
         nodeColors = faceToNodeColors(triangles,colors,self.nodes.shape)
     
-        return ipv.plot_trisurf(self.nodes[:,0], self.nodes[:,1], self.nodes[:,2],triangles,color=nodeColors )
+        ipv.plot_trisurf(self.nodes[:,0], self.nodes[:,1], self.nodes[:,2],triangles,color=nodeColors )
+        ipv.show()
 
 class Mesh:
     def __init__(self,filename,mesh) -> None:
